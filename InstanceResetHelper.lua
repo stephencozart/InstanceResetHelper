@@ -20,11 +20,14 @@ end
 
 local irh = {
     dungeonName = nil,
-    counter = 0,
+    counter = 1,
     timeElapsed = 0,
     setDungeonName = function(self, dungeonName)
         _print('Dungeon name set to ' .. dungeonName)
         self.dungeonName = dungeonName
+    end,
+    resetCounter = function(self)
+        self.counter = 1
     end,
     incrementCounter = function(self)    
         self.counter = self.counter + 1
@@ -33,6 +36,9 @@ local irh = {
     incrementTimer = function(self)
         self.timeElapsed = self.timeElapsed + 1
         --_print("Timer incremented to " .. self.timeElapsed)
+    end,
+    resetTimer = function(self)
+        self.timeElapsed = 0
     end,
     secondsToClock = function(self)
         local seconds = tonumber(self.timeElapsed)
@@ -67,40 +73,40 @@ function Config:CreateUI()
     UI.count:SetPoint("Center", UI, "Center")
     UI.count:SetText("|cffffd700" .. irh.counter .. "|r")
 
-    local timerFrame = CreateFrame('Frame', 'InstanceResetHelper_TimerFrame', UI, 'GlowBoxTemplate')
-    timerFrame:SetPoint("Bottom", UI, "Bottom", 0, -35)
-    timerFrame:SetSize(90, 25)
+    UI.timerFrame = CreateFrame('Frame', 'InstanceResetHelper_TimerFrame', UI, 'GlowBoxTemplate')
+    UI.timerFrame:SetPoint("Bottom", UI, "Bottom", 0, -35)
+    UI.timerFrame:SetSize(90, 25)
 
-    timerFrame.hours = timerFrame:CreateFontString(nil, "Overlay")
-    timerFrame.hours:SetFontObject('Game13Font')
-    timerFrame.hours:SetPoint("Left", timerFrame, "Left", 7, 0)
+    UI.timerFrame.hours = UI.timerFrame:CreateFontString(nil, "Overlay")
+    UI.timerFrame.hours:SetFontObject('Game13Font')
+    UI.timerFrame.hours:SetPoint("Left", UI.timerFrame, "Left", 7, 0)
 
-    timerFrame.minutes = timerFrame:CreateFontString(nil, "Overlay")
-    timerFrame.minutes:SetFontObject('Game13Font')
-    timerFrame.minutes:SetPoint("Left", timerFrame, "Left", 28, 0)
+    UI.timerFrame.minutes = UI.timerFrame:CreateFontString(nil, "Overlay")
+    UI.timerFrame.minutes:SetFontObject('Game13Font')
+    UI.timerFrame.minutes:SetPoint("Left", UI.timerFrame, "Left", 28, 0)
 
-    timerFrame.seconds = timerFrame:CreateFontString(nil, "Overlay")
-    timerFrame.seconds:SetFontObject('Game13Font')
-    timerFrame.seconds:SetPoint("Left", timerFrame, "Left", 58, 0)
+    UI.timerFrame.seconds = UI.timerFrame:CreateFontString(nil, "Overlay")
+    UI.timerFrame.seconds:SetFontObject('Game13Font')
+    UI.timerFrame.seconds:SetPoint("Left", UI.timerFrame, "Left", 58, 0)
 
-    timerFrame.update = function()
+    UI.timerFrame.update = function()
         local clock = irh:secondsToClock()
-        timerFrame.seconds:SetText("|cffffd700: " .. clock[3] .. "|r")
-        timerFrame.minutes:SetText("|cffffd700: " .. clock[2] .. "|r")
-        timerFrame.hours:SetText("|cffffd700" .. clock[1] .. "|r")
+        UI.timerFrame.seconds:SetText("|cffffd700: " .. clock[3] .. "|r")
+        UI.timerFrame.minutes:SetText("|cffffd700: " .. clock[2] .. "|r")
+        UI.timerFrame.hours:SetText("|cffffd700" .. clock[1] .. "|r")
     end
 
-    timerFrame.update()
+    UI.timerFrame.update()
 
-    local timer = {}
+    UI.timer = {}
 
-    timer.callback = function()
+    UI.timer.callback = function()
         irh:incrementTimer()
-        timerFrame.update()
-        C_TimerAfter(1, timer.callback)
+        UI.timerFrame.update()
+        C_TimerAfter(1, UI.timer.callback)
     end
 
-    C_TimerAfter(1, timer.callback)
+    C_TimerAfter(1, UI.timer.callback)
 
     UI:SetShown(false)
 
@@ -109,10 +115,13 @@ end
 
 local function onEventHandler(self, event, ...)
     if (event == "PLAYER_ENTERING_WORLD") then
-        inInstance, instanceType = IsInInstance()
+        local inInstance, instanceType = IsInInstance()
         
         if (instanceType == "party" and inInstance) then
-            name, type, difficultyIndex, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, instanceMapId, lfgID = GetInstanceInfo()
+            if (irh.dungeonName == nil) then
+                Config:Toggle()
+            end
+            local name, _, difficultyIndex, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, instanceMapId, lfgID = GetInstanceInfo()
             irh:setDungeonName(name)            
         end
 
@@ -127,8 +136,16 @@ StaticPopupDialogs["InstanceResetHelper_Confirm"] = {
     button1 = "Yes",
     button2 = "No",
     OnAccept = function() 
+        if (irh.counter == 10) then
+            irh:resetCounter()
+            irh:resetTimer()
+            UI.timer:Cancel()
+        else
+            irh:incrementCounter()
+        end
+        UI.count:SetText("|cffffd700" .. irh.counter .. "|r")
         ResetInstances()
-        irh:incrementCounter()
+        
     end,
     timeout = 0,
     whileDead = true,
@@ -137,8 +154,6 @@ StaticPopupDialogs["InstanceResetHelper_Confirm"] = {
 }
 
 local frame = CreateFrame('Frame', 'InstanceResetHelper_Frame')
-
-Config:Toggle()
 
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:SetScript('OnEvent', onEventHandler)
