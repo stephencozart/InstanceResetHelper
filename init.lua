@@ -3,26 +3,28 @@
 ----------------------------------------------------------------------
 local _, core = ...
 
-local irh = core.irh
+local UI = core.UI
 
-function init(self, event, name)
-    print('init called')
+function init(self, event, name)    
     if (event == "PLAYER_ENTERING_WORLD") then
         local inInstance, instanceType = IsInInstance()
         
         if (instanceType == "party" and inInstance) then
-            if (irh.dungeonName == nil) then
-                core.Config:Toggle()
+            if (UI.dungeonName == nil) then        
+                UI.frame:SetShown(true)
+                if (UI.isTicking == false) then
+                    UI:StartTicker()
+                end
             end
+
             local name, _, difficultyIndex, difficultyName, maxPlayers, dynamicDifficulty, isDynamic, instanceMapId, lfgID = GetInstanceInfo()
-            irh:setDungeonName(name)            
+            UI:SetDungeonName(name)
         end
 
-        if (inInstance == false and core.irh.dungeonName ~= nil) then
-            StaticPopup_Show("InstanceResetHelper_Confirm")            
-        end        
+        if (inInstance == false and UI.dungeonName ~= nil) then
+            StaticPopup_Show("InstanceResetHelper_Confirm")
+        end
     end
-
 end
 
 

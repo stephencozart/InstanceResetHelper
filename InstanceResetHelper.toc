@@ -6,6 +6,6 @@
 ## DefaultState: enabled
 
 config.lua
-model.lua
 ui.lua
+commands.lua
 init.lua

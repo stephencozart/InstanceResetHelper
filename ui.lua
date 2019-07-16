@@ -3,85 +3,108 @@
 ----------------------------------------------------------------------
 local _, core = ...
 
-
-local Config = core.Config
-local UI
-local C_TimerAfter = C_Timer.After
-
-local function _print(msg)     
-    if Config._debug then
-        print(msg)
+core.UI = {
+    dungeonName = nil,
+    counter = 1,
+    timeElapsed = 0,
+    isTicking = false,
+    SetDungeonName = function(self, dungeonName)
+        self.dungeonName = dungeonName
+    end,
+    ResetCounter = function(self)
+        self.counter = 1
+    end,
+    IncrementCounter = function(self)
+        self.counter = self.counter + 1
+    end,
+    IncrementTimer = function(self)
+        self.timeElapsed = self.timeElapsed + 1
+    end,
+    ResetTimer = function(self)
+        self.timeElapsed = 0
+    end,
+    SecondsToClock = function(self)
+        local seconds = tonumber(self.timeElapsed)
+      
+        if seconds <= 0 then
+            return { '00', '00', '00' }
+        else
+            hours = string.format("%02.f", math.floor(seconds/3600));
+            mins = string.format("%02.f", math.floor(seconds/60 - (hours*60)));
+            secs = string.format("%02.f", math.floor(seconds - hours*3600 - mins *60));
+            return {
+                hours,
+                mins,
+                secs
+            }
+        end
+    end,
+    StartTicker = function(self)
+        self.isTicking = true
+        local ui = self
+        self.ticker = C_Timer.NewTicker(1, function()
+            ui:IncrementTimer()
+            ui.timerFrame:Update()
+        end)
+    end,
+    CancelTicker = function(self)
+        self.isTicking = false
+        self.ticker:Cancel()
     end
+}
+
+local UI = core.UI
+
+UI.frame = CreateFrame('Frame', 'InstanceResetHelper_CounterFrame', UIParent, 'GlowBoxTemplate')
+UI.frame:SetShown(false)
+UI.frame:SetPoint("Top", UIParent, "Top", 0, -20)
+UI.frame:SetSize(90,90)
+
+UI.count = UI.frame:CreateFontString(nil, "Overlay")
+UI.count:SetFontObject("Game27Font")
+UI.count:SetPoint("Center", UI.frame, "Center")
+UI.count:SetText("|cffffd700" .. UI.counter .. "|r")
+
+UI.timerFrame = CreateFrame('Frame', 'InstanceResetHelper_TimerFrame', UI.frame, 'GlowBoxTemplate')
+UI.timerFrame:SetPoint("Bottom", UI.frame, "Bottom", 0, -35)
+UI.timerFrame:SetSize(90, 25)
+
+UI.timerFrame.hours = UI.timerFrame:CreateFontString(nil, "Overlay")
+UI.timerFrame.hours:SetFontObject('Game13Font')
+UI.timerFrame.hours:SetPoint("Left", UI.timerFrame, "Left", 7, 0)
+
+UI.timerFrame.minutes = UI.timerFrame:CreateFontString(nil, "Overlay")
+UI.timerFrame.minutes:SetFontObject('Game13Font')
+UI.timerFrame.minutes:SetPoint("Left", UI.timerFrame, "Left", 28, 0)
+
+UI.timerFrame.seconds = UI.timerFrame:CreateFontString(nil, "Overlay")
+UI.timerFrame.seconds:SetFontObject('Game13Font')
+UI.timerFrame.seconds:SetPoint("Left", UI.timerFrame, "Left", 58, 0)
+
+UI.timerFrame.Update = function()
+    local clock = UI:SecondsToClock()
+    UI.timerFrame.seconds:SetText("|cffffd700: " .. clock[3] .. "|r")
+    UI.timerFrame.minutes:SetText("|cffffd700: " .. clock[2] .. "|r")
+    UI.timerFrame.hours:SetText("|cffffd700" .. clock[1] .. "|r")
 end
 
-function Config:Toggle()
-    local menu = UI or Config:CreateUI()
-    menu:SetShown(not menu:IsShown()) 
-end
+UI.timerFrame:Update()
 
-function Config:CreateUI()
-    UI = CreateFrame('Frame', 'InstanceResetHelper_CounterFrame', UIParent, 'GlowBoxTemplate')
-
-    UI:SetPoint("Top", UIParent, "Top", 0, -20)
-    UI:SetSize(90,90)
-    UI.count = UI:CreateFontString(nil, "Overlay")
-    UI.count:SetFontObject("Game27Font")
-    UI.count:SetPoint("Center", UI, "Center")
-    UI.count:SetText("|cffffd700" .. core.irh.counter .. "|r")
-
-    UI.timerFrame = CreateFrame('Frame', 'InstanceResetHelper_TimerFrame', UI, 'GlowBoxTemplate')
-    UI.timerFrame:SetPoint("Bottom", UI, "Bottom", 0, -35)
-    UI.timerFrame:SetSize(90, 25)
-
-    UI.timerFrame.hours = UI.timerFrame:CreateFontString(nil, "Overlay")
-    UI.timerFrame.hours:SetFontObject('Game13Font')
-    UI.timerFrame.hours:SetPoint("Left", UI.timerFrame, "Left", 7, 0)
-
-    UI.timerFrame.minutes = UI.timerFrame:CreateFontString(nil, "Overlay")
-    UI.timerFrame.minutes:SetFontObject('Game13Font')
-    UI.timerFrame.minutes:SetPoint("Left", UI.timerFrame, "Left", 28, 0)
-
-    UI.timerFrame.seconds = UI.timerFrame:CreateFontString(nil, "Overlay")
-    UI.timerFrame.seconds:SetFontObject('Game13Font')
-    UI.timerFrame.seconds:SetPoint("Left", UI.timerFrame, "Left", 58, 0)
-
-    UI.timerFrame.update = function()
-        local clock = core.irh:secondsToClock()
-        UI.timerFrame.seconds:SetText("|cffffd700: " .. clock[3] .. "|r")
-        UI.timerFrame.minutes:SetText("|cffffd700: " .. clock[2] .. "|r")
-        UI.timerFrame.hours:SetText("|cffffd700" .. clock[1] .. "|r")
-    end
-
-    UI.timerFrame.update()
-
-    UI.timer = {}
-
-    UI.timer.callback = function()
-        core.irh:incrementTimer()
-        UI.timerFrame.update()
-        C_TimerAfter(1, UI.timer.callback)
-    end
-
-    C_TimerAfter(1, UI.timer.callback)
-
-    UI:SetShown(false)
-
-    return UI;
-end
+UI.ticker = {}
 
 StaticPopupDialogs["InstanceResetHelper_Confirm"] = {
     text = "Reset all instances?",
     button1 = "Yes",
     button2 = "No",
     OnAccept = function() 
-        if (core.irh.counter == 10) then
-            core.irh:resetCounter()
-            core.irh:resetTimer()
-            UI.timer:Cancel()
+        if (UI.counter == 10) then
+            UI:ResetCounter()
+            UI:ResetTimer()
+            UI:CancelTicker()
         else
-            core.irh:incrementCounter()
+            UI:IncrementCounter()
         end
-        UI.count:SetText("|cffffd700" .. core.irh.counter .. "|r")
+        UI.count:SetText("|cffffd700" .. UI.counter .. "|r")
         ResetInstances()
         
     end,
