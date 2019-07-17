@@ -54,7 +54,6 @@ frame:SetScript('OnEvent', function(self, eventName, addonName)
         InstanceResetHelperDB = core:copyDefaults(defaults, InstanceResetHelperDB)
         core:InitUI(InstanceResetHelperDB)        
         core:InitConfigUI(InstanceResetHelperDB, UI)
-        core.Config:Toggle()
         UI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         UI.frame:SetScript('OnEvent', init)
     end    
