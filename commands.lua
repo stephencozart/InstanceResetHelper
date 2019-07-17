@@ -2,7 +2,7 @@ local _, core = ...
 
 local UI = core.UI
 
-local irh = core.irh
+local Config = core.Config
 
 SLASH_InstanceResetHelper1 = '/irh'
 
@@ -33,8 +33,12 @@ SlashCmdList["InstanceResetHelper"] = function(msg)
             UI:CancelTicker()
         end
         UI.timerFrame:Update()
+        UI:Refresh()
+    elseif(msg == 'config') then
+        Config:Toggle()
     else 
         print("Instance Reset Helper Commands:")
+        print("/irh config")
         print("/irh show")
         print("/irh hide")
         print("/irh pause")

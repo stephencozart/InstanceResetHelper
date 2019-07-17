@@ -4,6 +4,7 @@
 ## Author: Cozart, Stephen
 ## Notes: Automaticaly "Reset All Instances" when exiting a dungeon
 ## DefaultState: enabled
+## SavedVariables: InstanceResetHelperDB
 
 config.lua
 ui.lua
