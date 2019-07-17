@@ -5,7 +5,6 @@ local _, core = ...
 
 core.Config = {
     CreateUIFrame = function(self, point, x, y)
-        print(point)
         local frame = CreateFrame('Frame', 'InstanceResetHelper_CounterFrame', UIParent, 'GlowBoxTemplate')
         frame:SetShown(false)
         frame:SetPoint(point, UIParent, point, x, y * -1)
