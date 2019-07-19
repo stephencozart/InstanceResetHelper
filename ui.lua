@@ -110,7 +110,8 @@ function core:InitUI(config)
             if (UI.counter == 10) then
                 UI:ResetCounter()
                 UI:ResetTimer()
-                UI:CancelTicker()            
+                UI:CancelTicker()
+                UI:SetDungeonName(nil)            
             else
                 UI:IncrementCounter()
             end
