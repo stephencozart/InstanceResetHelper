@@ -13,6 +13,8 @@ core.Config = {
     end
 }
 
+core.lootTable = {}
+
 local Config = core.Config
 
 
