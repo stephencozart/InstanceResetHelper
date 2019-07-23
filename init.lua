@@ -12,7 +12,7 @@ local defaults = {
     hideObjectiveTracker = false
 }
 
-local lootTable = core.lootTable
+local trackedItems = core.trackedItems
 
 function init(self, event, name)    
     if (event == "PLAYER_ENTERING_WORLD") then
@@ -52,111 +52,101 @@ local frame = CreateFrame('Frame', 'InstanceResetHelper_Frame')
 
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript('OnEvent', function(self, eventName, addonName)
-
-    -- track loot
-
-
     if (addonName == 'InstanceResetHelper') then
         InstanceResetHelperDB = core:copyDefaults(defaults, InstanceResetHelperDB)
         core:InitUI(InstanceResetHelperDB)        
         core:InitConfigUI(InstanceResetHelperDB, UI)
         UI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         UI.frame:SetScript('OnEvent', init)
+        initLootFrame()
     end    
 end)
 
 local IRH_LOOT_ITEM_SELF = LOOT_ITEM_SELF:gsub("%%s", "(.+)")
 local IRH_LOOT_ITEM_SELF_MULTIPLE = LOOT_ITEM_SELF_MULTIPLE:gsub("%%s", "(.+)"):gsub("%%d", "(%%d+)")
 
--- parent UI.lootFrame
-UI.lootFrame = CreateFrame('Frame', __addonName .. '_LootFrame', UIParent, 'GlowBoxTemplate')
-UI.lootFrame:SetShown(true)
-UI.lootFrame:SetPoint("LEFT", UIParent, "LEFT")
-UI.lootFrame:SetSize(400, 300)
-UI.lootFrame:SetClipsChildren(true)
+UI.lootFrame = {}
 
--- scrollframe
-UI.lootFrame.ScrollFrame = CreateFrame('ScrollFrame', nill, UI.lootFrame, "UIPanelScrollFrameTemplate")
-
-UI.lootFrame.ScrollFrame:SetPoint("TOPLEFT", UI.lootFrame, "TOPLEFT")
-UI.lootFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", UI.lootFrame, "BOTTOMRIGHT")
-UI.lootFrame.ScrollFrame:SetSize(400, 300)
+function initLootFrame(database)
+    -- parent UI.lootFrame
+    UI.lootFrame = CreateFrame('Frame', __addonName .. '_LootFrame', UIParent, 'GlowBoxTemplate')
+    UI.lootFrame:SetShown(true)
+    UI.lootFrame:SetPoint("TOPLEFT", UI.frame, "TOPRIGHT", 20, 0)
+    UI.lootFrame:SetSize(400, 240)
 
 
-function UI.lootFrame:AddItem(itemLink, quantity)
+    -- scrollframe
+    UI.lootFrame.ScrollFrame = CreateFrame('ScrollFrame', nill, UI.lootFrame, "UIPanelScrollFrameTemplate")
 
-    itemName, _, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
-itemEquipLoc, itemIcon, itemSellPrice, itemClassID, itemSubClassID, bindType, expacID, itemSetID, 
-isCraftingReagent = GetItemInfo(itemLink) 
-        
-    if (lootTable[itemName] == nill) then
-    
-        lootTable[itemName] = {
-            quantity = quantity,
-            itemName = itemName,
-            itemLink = itemLink,
-            frame = UI.lootFrame:CreateFontString(nil, "Overlay")
-        }
-        lootTable[itemName].frame:SetFontObject("Game15Font")
-    else
-        lootTable[itemName].quantity = lootTable[itemName].quantity + quantity
-    end
+    UI.lootFrame.ScrollFrame:SetPoint("TOPLEFT", UI.lootFrame, "TOPLEFT")
+    UI.lootFrame.ScrollFrame:SetPoint("BOTTOMRIGHT", UI.lootFrame, "BOTTOMRIGHT")
 
-end
+    UI.lootFrame:RegisterEvent("CHAT_MSG_LOOT")
+    UI.lootFrame:RegisterEvent("LOOT_CLOSED")
+    UI.lootFrame:SetScript("OnEvent", function(self, eventName, msg)
+        if (eventName == "CHAT_MSG_LOOT") then
 
-local lastItem = nil
+            if msg:match(IRH_LOOT_ITEM_SELF_MULTIPLE) then			
+                itemLink, quantity = string.match(msg, IRH_LOOT_ITEM_SELF_MULTIPLE)
 
-function UI.lootFrame:RenderLootTable()
+            elseif msg:match(IRH_LOOT_ITEM_SELF) then			
+                itemLink = string.match(msg, IRH_LOOT_ITEM_SELF)
+                quantity = 1
+            end
 
-    local child = CreateFrame("Frame", nil, UI.lootFrame.ScrollFrame)
-    
-    for k,v in pairs(lootTable) do
-
-        local point = "BOTTOMLEFT"
-        local anchor = lastItem
-        if (lastItem == nil) then
-            point = "TOPLEFT"
-            anchor = child
-        else
-            anchor = lastItem
+            -- UI.lootFrame:AddItem(itemLink, quantity)
         end
 
+        if (eventName == "LOOT_CLOSED") then
+            UI.lootFrame:RenderLootTable()
+        end
+    end)
+
+    function UI.lootFrame:RenderLootTable()
+        local child = CreateFrame("Frame", __addonName .. 'ScrollChild', UI.lootFrame.ScrollFrame)
     
 
-        lootTable[k].frame:SetPoint("TOPLEFT", child, point)
-        lootTable[k].frame:SetText(lootTable[k].itemName .. '@' .. lootTable[k].quantity)
-        lastItem = lootTable[k].frame
+        UI.lootFrame.ScrollFrame:SetScrollChild(child)
+        local i = 1
+        for k,v in pairs(trackedItems) do
 
-    end
+            local itemName, itemLink, _, _, _, _, _, _, _, itemIcon = GetItemInfo(k)
+            local itemCount = GetItemCount(k, true)
+            
+            itemFrame = CreateFrame("Frame", 'itemFrame' .. i, child)
+            itemFrame:SetPoint("TOPLEFT", child, "TOPLEFT", 20, -25 * i)
+            itemFrame:SetSize(400, 15)
+            itemFrame:SetScript("OnEnter", function() 
+                if (itemLink) then
+                    GameTooltip:SetOwner(UI.frame, "ANCHOR_CURSOR")
+                    GameTooltip:SetHyperlink(itemLink)
+                    GameTooltip:Show()
+                end
+            end)
+            itemFrame:SetScript("OnLeave", function()
+                GameTooltip:Hide()
+            end)
+            itemFrame.bg = itemFrame:CreateTexture(nil, "BACKGROUND")
+            itemFrame.bg:SetPoint("LEFT", itemFrame, "LEFT")
+            itemFrame.bg:SetTexture(itemIcon)
+            itemFrame.bg:SetSize(20, 20)
 
-    child:SetSize(400, 600)
+            itemFrame.itemName = itemFrame:CreateFontString(__addonName .. 'itemName' .. i, "Overlay")
+            itemFrame.itemName:SetFontObject("Game15Font")
+            itemFrame.itemName:SetText(k)
+            itemFrame.itemName:SetPoint("TOPLEFT", itemFrame, "TOPLEFT", 25, 0)
 
-    UI.lootFrame.ScrollFrame:SetScrollChild(child)
-    
-end
+            itemFrame.itemCount = itemFrame:CreateFontString(nil, "Overlay")
+            itemFrame.itemCount:SetFontObject("Game15Font")
+            itemFrame.itemCount:SetPoint("TOPRIGHT", itemFrame, "TOPRIGHT", -40, 0)
+            itemFrame.itemCount:SetText("|cffffd700" .. itemCount .. "|r")
 
-
-
-UI.lootFrame:RegisterEvent("CHAT_MSG_LOOT")
-UI.lootFrame:RegisterEvent("LOOT_CLOSED")
-UI.lootFrame:SetScript("OnEvent", function(self, eventName, msg)
-
-    
-
-    if (eventName == "CHAT_MSG_LOOT") then
-
-        if msg:match(IRH_LOOT_ITEM_SELF_MULTIPLE) then			
-			itemLink, quantity = string.match(msg, IRH_LOOT_ITEM_SELF_MULTIPLE)
-
-		elseif msg:match(IRH_LOOT_ITEM_SELF) then			
-			itemLink = string.match(msg, IRH_LOOT_ITEM_SELF)
-			quantity = 1
+            i = i + 1
+            
         end
 
-        UI.lootFrame:AddItem(itemLink, quantity)
+        child:SetSize(400, i * 25)
     end
 
-    if (eventName == "LOOT_CLOSED") then
-        UI.lootFrame:RenderLootTable()
-    end
-end)
+    UI.lootFrame:RenderLootTable()
+end
