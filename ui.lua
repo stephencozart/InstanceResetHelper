@@ -75,6 +75,9 @@ function core:InitUI(config)
     UI.count:SetPoint("CENTER", UI.frame, "CENTER")
     UI.count:SetText("|cffffd700" .. UI.counter .. "|r")
 
+    UI.closeButton = CreateFrame('BUTTON', "InstanceResetHelper_CloseButton", UI.frame, 'UIPanelCloseButton')
+    UI.closeButton:SetPoint('TOPRIGHT', UI.frame, 'TOPRIGHT', 5, 5)
+
     UI.timerFrame = CreateFrame('Frame', 'InstanceResetHelper_TimerFrame', UI.frame, 'GlowBoxTemplate')
     UI.timerFrame:SetPoint("Bottom", UI.frame, "Bottom", 0, -35)
     UI.timerFrame:SetSize(90, 25)
