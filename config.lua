@@ -13,34 +13,6 @@ core.Config = {
     end
 }
 
--- todo make a way to add to this
-core.trackedItems = {
-    ["Shimmerscale"] = {
-        frame = nil
-    },
-    ["Coarse Leather"] = {
-        frame = nil
-    },
-    ["Cragscale"] = {
-        frame = nil
-    },
-    ["Dredged Leather"] = {
-        frame = nil
-    },
-    ["Mistscale"] = {
-        frame = nil
-    },
-    ["Tempest Hide"] = {
-        frame = nil
-    },
-    ["Blood-Stained Bone"] = {
-        frame = nil
-    },
-    ["Calcified Bone"] = {
-        frame = nil
-    }    
-}
-
 local Config = core.Config
 
 
