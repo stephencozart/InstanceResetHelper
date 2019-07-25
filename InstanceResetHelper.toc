@@ -6,6 +6,9 @@
 ## DefaultState: enabled
 ## SavedVariables: InstanceResetHelperDB
 
+Lib\LibDBIcon-1.0\LibStub\LibStub.lua
+Lib\LibDBIcon-1.0\LibDBIcon-1.0\LibDBIcon-1.0.lua
+Lib\LibDBIcon-1.0\LibDataBroker-1.1\LibDataBroker-1.1.lua
 config.lua
 ui.lua
 commands.lua

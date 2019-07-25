@@ -3,6 +3,14 @@
 ----------------------------------------------------------------------
 local _, core = ...
 
+function core:CreateUIFrame()
+    local frame = CreateFrame('Frame', 'InstanceResetHelper_CounterFrame', UIParent, 'GlowBoxTemplate')
+    frame:SetShown(false)
+    frame:SetPoint("LEFT", UIParent, "LEFT")
+    frame:SetSize(90,90)
+    return frame
+end
+
 core.UI = {
     dungeonName = nil,
     counter = 1,
@@ -64,11 +72,32 @@ function UI:Refresh()
     self.count:SetText("|cffffd700" .. self.counter .. "|r")
 end
 
+function UI:Toggle()
+    self.frame:SetShown(not self.frame:IsShown())    
+end
+
 local Config = core.Config
 
 function core:InitUI(config)
     
-    UI.frame = Config:CreateUIFrame(config.anchor, config.xOffset, config.yOffset)
+    UI.frame = core:CreateUIFrame(config.anchor, config.xOffset, config.yOffset)
+
+    -- enable frame to be movable
+    UI.frame:SetMovable(true)
+    UI.frame:EnableMouse(true)
+    UI.frame:SetScript("OnMouseDown", function(self, button)
+        if button == "LeftButton" and not self.isMoving then
+            self:StartMoving();
+            self.isMoving = true;
+        end
+    end)
+    UI.frame:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" and self.isMoving then
+            self:StopMovingOrSizing();
+            self.isMoving = false;
+        end
+    end)
+    -- end movable frame
 
     UI.count = UI.frame:CreateFontString(nil, "Overlay")
     UI.count:SetFontObject("Game27Font")

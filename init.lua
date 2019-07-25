@@ -9,7 +9,10 @@ local defaults = {
     xOffset = 0,
     yOffset = -20,
     anchor = "TOPLEFT",
-    hideObjectiveTracker = false
+    hideObjectiveTracker = false,
+    map = {
+        hide = false
+    }
 }
 
 function init(self, event, name)    
@@ -53,8 +56,26 @@ frame:SetScript('OnEvent', function(self, eventName, addonName)
     if (addonName == 'InstanceResetHelper') then
         InstanceResetHelperDB = core:copyDefaults(defaults, InstanceResetHelperDB)
         core:InitUI(InstanceResetHelperDB)        
-        core:InitConfigUI(InstanceResetHelperDB, UI)
+        local configPanel = core:InitConfigUI(InstanceResetHelperDB, UI)
         UI.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
         UI.frame:SetScript('OnEvent', init)    
+
+        -- setup minimap icon
+        local ldb = LibStub("LibDataBroker-1.1"):NewDataObject("Instance Reset Helper", {
+            type = "data source",
+            text = "Instance Reset Helper",
+            icon = "Interface\\Icons\\INV_Chest_Cloth_17",
+            OnClick = function(self, buttonName) 
+                
+                if (buttonName == 'LeftButton') then
+                    UI:Toggle()
+                elseif (buttonName == 'RightButton') then
+                    InterfaceOptionsFrame_OpenToCategory(configPanel)
+                end
+            end,
+        })
+
+        local icon = LibStub("LibDBIcon-1.0")
+        icon:Register("Instance Reset Helper", ldb, InstanceResetHelperDB.map)
     end    
 end)
